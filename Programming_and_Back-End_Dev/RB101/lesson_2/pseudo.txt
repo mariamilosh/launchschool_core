@@ -1,0 +1,125 @@
+***************************************************
+** A method that returns the sum of two integers **
+***************************************************
+Given two integers
+ - add the two integers together and return result
+
+START
+
+def sum(num_1, num_2)
+  num_1 + num_2
+
+END
+*******************************************************************************
+** A method that takes an array of strings, and returns a string that is all **
+** those strings concatenated together                                       **
+*******************************************************************************
+Given an array of strings.
+
+Iterate through the array one by one.
+ - save each value in array with index of the iterator to end of a new string
+ - return the new string
+
+START
+
+def arr_(str_arr)
+  SET iterator = 0
+  SET sentence = nil
+  WHILE iterator < length of str_arr
+    sentence << str_arr[iterator]
+    iterator = iterator + 1
+  return sentence
+
+END
+******************************************************************************
+** A method that takes an array of integers, and returns a new array with   **
+** every other element from the original array, starting with the first     **
+** element                                                                  **
+******************************************************************************
+Given an array of integers.
+
+Iterate through each element of the integer array.
+ - check if value of iterator is odd or even
+   - if odd or 0, add element at the index equal to the iterator to the end of a
+   new array
+ After iterating, return the new array
+
+START
+
+def every_other(int_arr)
+  iterator = 0
+  new_arr = []
+  WHILE iterator < length of int_arr
+    IF iterator == 0 || iterator % 2 == 0
+      add int_arr[iterator] value to end of new_arr
+  return new_arr
+
+END
+
+*************************************************************************
+** A method that determines the index of the 3rd occurrence of a given **
+** character in a string. For instance, if the given character is 'x'  **
+** and the string is 'axbxcdxex', the method should return 6 (the      **
+** index of the 3rd 'x'). If the given character does not occur at     **
+** least 3 times, return nil.                                          **
+*************************************************************************
+Given a string and a character.
+
+Iterate through the string.
+For each string character, compare with given character. If character ==
+given character, increment a counter
+Each iteration, check if counter is == 3
+ - If counter == 3, return current value of the iterator
+If done iterating string and counter is still < 3, return nil
+
+
+START
+
+READ string
+READ character
+SET counter = 0
+SET iterator = 0
+
+WHILE iterator < string length
+  IF string[iterator] == character
+    counter += 1
+  IF counter == 3
+    return iterator
+  iterator += 1
+return nil
+
+END
+
+********************************************************************************
+** A method that takes two arrays of numbers and returns the result           **
+** of merging the arrays. The elements of the first array should become       **
+** the elements at the even indexes of the returned array, while the elements **
+** of the second array should become the elements at the odd indexes.         **
+** For instance:                                                              **
+** merge([1, 2, 3], [4, 5, 6]) # => [1, 4, 2, 5, 3, 6]                        **
+** You may assume that both array arguments have the same number of elements. **
+********************************************************************************
+Given two number arrays
+
+Initialize a new empty array.
+Initialize an iterator = 0.
+Loop while iterator < the length of the number arrays.
+ - Insert value of first array at the array index = iterator to the end of the
+empty array.
+ - Insert value of the second array at the array index = iterator to the end of
+ the empty array.
+ - Increment the iterator by 1
+Return the new array.
+
+START
+
+SET new_array to empty
+SET iterator = 0
+READ array_1, array_2
+WHILE iterator < length of array_1
+  new_array << array_1[iterator]
+  new_array << array_2[iterator]
+  iterator = iterator + 1
+return new_array
+
+END
