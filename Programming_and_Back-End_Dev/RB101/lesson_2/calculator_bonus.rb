@@ -23,6 +23,15 @@ def operation_to_message(op)
   end
 end
 
+def integer?(num)
+  num.to_i.to_s == num
+end
+
+def number?(num)
+  numArray = num.split(".")
+  numArray.size <= 2 && integer?(numArray.first) && integer?(numArray.last)
+end
+
 prompt("Welcome to Calculator! Enter your name:")
 name = ''
 loop do
@@ -41,9 +50,9 @@ loop do # main loop
 
   loop do
     prompt("Enter a number:")
-    num1 = gets.chomp.to_i
+    num1 = gets.chomp
 
-    if valid_number?(num1)
+    if number?(num1)
       break
     else
       prompt("That doesn't look like a valid number")
@@ -51,9 +60,9 @@ loop do # main loop
   end
   loop do
     prompt("Enter a number:")
-    num2 = gets.chomp.to_i
+    num2 = gets.chomp
 
-    if valid_number?(num2)
+    if number?(num2)
       break
     else
       prompt("That doesn't look like a valid number")
@@ -80,6 +89,8 @@ What operation would you like to perform?
   end
 
   prompt("#{operation_to_message(operator)} the two numbers...")
+  num1 = num1.to_i
+  num2 = num2.to_i
   result = case operator
            when '1'
              num1 + num2
@@ -88,10 +99,15 @@ What operation would you like to perform?
            when '3'
              num1 * num2
            when '4'
-             num1.to_f / num2.to_f
+             if num2 != 0
+               num1.to_f / num2.to_f
+             else
+               prompt("Cannot divide by zero")
+               "undefined"
+             end
            end
   prompt("The result is #{result}")
-  prompt("Do you want to perform another calculation?")
+  prompt("Do you want to perform another calculation?(y)")
   answer = Kernel.gets().chomp()
   break unless answer.downcase().start_with?('y')
 end
