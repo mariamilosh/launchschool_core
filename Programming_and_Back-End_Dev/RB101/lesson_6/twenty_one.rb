@@ -120,7 +120,8 @@ def hit(hand, deck)
   hand << deal_card(deck)
 end
 
-def splittable?(hand, card_values)
+def splittable?(hand, card_values, deck)
+  return false if deck.size < 2
   cards = hand.each_with_object([]) { |c, v| v << card_values[c[0]] }
   cards.uniq.size == 1
 end
@@ -131,13 +132,14 @@ def split?(hand, num)
   choice == 'y'
 end
 
-def double_aces?(hand)
+def double_aces?(hand, deck)
+  return false if deck.size < 2
   hand.all?("ace")
 end
 
 def split_hand(hand, num, increment, deck)
   # p hand[num].slice(1)
-  hand[num+increment] = [hand[num].slice!(1)]
+  hand[num+increment] = [hand[num].slice!(num)]
   hit(hand[num], deck)
   hit(hand[num+increment], deck)
 end
@@ -167,25 +169,17 @@ def display_hand(hands, card_values)
     end
     puts ""
   end
-  # hands.each do |_, hand|
-  #   print "Player score: #{get_hand_value(hand.reject {|m| m == [" hidden", " hidden"]}, card_values)}"
-  #   hand.each do |card|
-  #     print "    "
-  #   end
-  #   print "    "
-  # end
-  # puts ""
-  #print_totals = [""]
 end
 
 def dealer_turn(dealer_hand, hidden_card, player_hand, rem_deck, card_values, scores)
   flip(dealer_hand, hidden_card)
+  sleep 0.5
   loop do
-    dealer_hand_value = get_hand_value(dealer_hand[1], card_values)
+    dealer_hand_value = get_hand_value(dealer_hand[0], card_values)
     game_screen(dealer_hand, player_hand, card_values)
     break if not dealer_hit?(dealer_hand, dealer_hand_value, scores)
     if not deck_empty?(rem_deck)
-      hit(dealer_hand[1], rem_deck)
+      hit(dealer_hand[0], rem_deck)
       sleep 1.5
     else
       puts "Deck out of cards. See final score:"
@@ -195,14 +189,14 @@ def dealer_turn(dealer_hand, hidden_card, player_hand, rem_deck, card_values, sc
 end
 
 def flip(dealer_hand, hidden_card)
-  dealer_hand[1].reject! { |element| element == [" hidden", " hidden"]}
-  dealer_hand[1] << hidden_card.flatten
+  dealer_hand[0].reject! { |element| element == [" hidden", " hidden"]}
+  dealer_hand[0] << hidden_card.flatten
 end
 
 def dealer_hit?(dealer_hand, hand_value, best_player_score)
   # return true if hand_value < best_player_score
   return true if hand_value < 17
-  if hand_value == 17 && dealer_hand[1].flatten.any?("ace") && dealer_hand[1] == 2
+  if hand_value == 17 && dealer_hand[0].flatten.any?("ace") && dealer_hand[0] == 2
     return true
   end
   return false if hand_value >= 17
@@ -214,7 +208,7 @@ def game_screen(dealer_hand, player_hand, card_values)
   puts ""
   puts "Dealer"
   display_hand(dealer_hand, card_values)
-  dealer_hand_value = get_hand_value(dealer_hand[1].reject {|m| m == [" hidden", " hidden"]}, card_values)
+  dealer_hand_value = get_hand_value(dealer_hand[0].reject {|m| m == [" hidden", " hidden"]}, card_values)
   puts "Total: #{dealer_hand_value}"
   puts "\n\n\n\n\n\n"
   puts "Player"
@@ -222,15 +216,14 @@ def game_screen(dealer_hand, player_hand, card_values)
   player_hand_values = player_hand.each_with_object([]) do | (k, h), s |
     s << get_hand_value(player_hand[k], card_values)
   end
-  p player_hand_values
-  # binding.pry
+  # p player_hand_values
   player_hand_values.each_with_index do |val, i|
     if val < 10
       print "Total: #{val} "
     else
       print "Total: #{val}"
     end
-    (player_hand[i+1].size * 9 + 3 - 9).times { |t| print " "}
+    (player_hand[i].size * 9 + 3 - 9).times { |t| print " "}
   end
   puts ""
   puts "\n-$-$-$-$-$-$-$-$-$-$-$-$-$-$-$-$-$-$-$-$-$-$-$-$-$-$-$-$-$-$-$-$-$-"
@@ -240,16 +233,15 @@ def game_screen(dealer_hand, player_hand, card_values)
 end
 
 def start_deal(dealer_hand, player_hand, hidden_card, rem_deck)
-  hit(player_hand[1], rem_deck)
-  hit(dealer_hand[1], rem_deck)
-  hit(player_hand[1], rem_deck)
+  hit(player_hand[0], rem_deck)
+  hit(dealer_hand[0], rem_deck)
+  hit(player_hand[0], rem_deck)
   hit(hidden_card, rem_deck)
-  dealer_hand[1].push([" hidden", " hidden"])
+  dealer_hand[0].push([" hidden", " hidden"])
 end
 
 def score_round(player_hand, dealer_hand, card_values)
-  # puts "\n-$-$-$-$-$-$-$-$-$-$-$-$-$-$-$-$-$-$-$-$-$-$-$-$-$-$-$-$-$-$-$-$-$-"
-  dealer_hv = get_hand_value(dealer_hand[1], card_values)
+  dealer_hv = get_hand_value(dealer_hand[0], card_values)
   puts ""
   puts "Dealer score: #{dealer_hv}"
   puts "Dealer went bust!" if dealer_hv > 21
@@ -276,42 +268,44 @@ loop do
   rem_deck = []
   initialize_deck(card_values, rem_deck)
   loop do
-    player_hand = { 1 => [] }
-    dealer_hand = { 1 => [] }
+    player_hand = { 0 => [] }
+    dealer_hand = { 0 => [] }
     hidden_card = []
 
     start_deal(dealer_hand, player_hand, hidden_card, rem_deck)
-    # binding.pry
+
     game_screen(dealer_hand, player_hand, card_values)
     # puts "\n\n\n\n"
     # display_hand(player_hand, card_values)
     # puts "Hand total: #{get_hand_value(player_hand[1], card_values)}"
-    # binding.pry
+
     puts ""
-    display_hand(player_hand.slice(1), card_values)
-    if double_aces?(player_hand[1])
-      split_hand(player_hand, 1, 1, rem_deck) if split?(player_hand, 1)
+
+    if double_aces?(player_hand[0], rem_deck)
+      display_hand(player_hand.slice(0), card_values)
+      split_hand(player_hand, 0, 1, rem_deck) if split?(player_hand, 0)
       game_screen(dealer_hand, player_hand, card_values)
-    elsif splittable?(player_hand[1], card_values)
-      if split?(player_hand, 1)
-        split_hand(player_hand, 1, 1, rem_deck)
+    elsif splittable?(player_hand[0], card_values, rem_deck)
+      display_hand(player_hand.slice(0), card_values)
+      if split?(player_hand, 0)
+        split_hand(player_hand, 0, 1, rem_deck)
         # player_hand.each { |_, h| hit(h, rem_deck)}
         game_screen(dealer_hand, player_hand, card_values)
-        # binding.pry
-        if splittable?(player_hand[1], card_values)
+
+        if splittable?(player_hand[0], card_values, rem_deck)
+          puts ""
+          display_hand(player_hand.slice(0), card_values)
+          puts "Hand total: #{get_hand_value(player_hand[0], card_values)}"
+          split_hand(player_hand, 0, 2, rem_deck) if split?(player_hand, 0)
+          # player_hand.each { |_, h| hit(h, rem_deck)}
+          game_screen(dealer_hand, player_hand, card_values)
+        end
+
+        if splittable?(player_hand[1], card_values, rem_deck)
           puts ""
           display_hand(player_hand.slice(1), card_values)
           puts "Hand total: #{get_hand_value(player_hand[1], card_values)}"
           split_hand(player_hand, 1, 2, rem_deck) if split?(player_hand, 1)
-          # player_hand.each { |_, h| hit(h, rem_deck)}
-          game_screen(dealer_hand, player_hand, card_values)
-        end
-        # binding.pry
-        if splittable?(player_hand[2], card_values)
-          puts ""
-          display_hand(player_hand.slice(2), card_values)
-          puts "Hand total: #{get_hand_value(player_hand[2], card_values)}"
-          split_hand(player_hand, 2, 2, rem_deck) if split?(player_hand, 2)
           game_screen(dealer_hand, player_hand, card_values)
         end
       end
@@ -320,12 +314,9 @@ loop do
     player_hand.each do |n, h|
       loop do
         game_screen(dealer_hand, player_hand, card_values)
-        # puts "\n\n\n"
         puts ""
         display_hand(player_hand.slice(n), card_values)
         puts "Player score: #{get_hand_value(player_hand[n], card_values)}"
-        # player_hand_value = get_hand_value(h.reject {|m| m == [" hidden", " hidden"]}, card_values)
-        # puts "Player score: #{player_hand_value}"
         if get_hand_value(h, card_values) < 21
           choice = get_turn(h, rem_deck, n)
           if choice == 'hit'
@@ -351,17 +342,18 @@ loop do
       end
     end
     player_scores << 0
-    # binding.pry
+
     scores = player_scores.max
 
     dealer_turn(dealer_hand, hidden_card, player_hand, rem_deck, card_values, scores)
 
     score_round(player_hand, dealer_hand, card_values)
-    if not deck_empty?(rem_deck)
+
+    if rem_deck.size >= 4
       puts ""
       prompt("Another hand? (y/n)")
       answer = gets.chomp.downcase
-      break unless answer == "y"
+      break if answer == "n"
     else
       break
     end
@@ -464,6 +456,12 @@ def firework
   puts ANIMATION_1
   sleep 0.8
   system('clear')
+end
+def twenty_one
+  firework
+  firework
+  firework
+  money_flash
 end
 
 # firework
