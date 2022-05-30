@@ -104,7 +104,7 @@ def get_turn(hand, deck, num)
     end
     puts "Invalid response"
   else
-    return 'last'
+    return 'empty'
   end
 end
 
@@ -139,6 +139,7 @@ end
 
 def split_hand(hand, num, increment, deck)
   # p hand[num].slice(1)
+  # binding.pry
   hand[num+increment] = [hand[num].slice!(num)]
   hit(hand[num], deck)
   hit(hand[num+increment], deck)
@@ -171,6 +172,63 @@ def display_hand(hands, card_values)
   end
 end
 
+def player_turn(player_hand, dealer_hand, card_values, rem_deck)
+  player_split_hand(player_hand, dealer_hand, card_values, rem_deck)
+  player_hand.each do |n, h|
+    loop do
+      # game_screen(dealer_hand, player_hand, card_values)
+      # puts ""
+      display_hand(player_hand.slice(n), card_values)
+      puts "Player score: #{get_hand_value(player_hand[n], card_values)}"
+      if get_hand_value(h, card_values) < 21
+        choice = get_turn(h, rem_deck, n)
+        if choice == 'hit'
+          hit(h, rem_deck)
+        end
+      end
+      if get_hand_value(h, card_values) > 21
+        break
+      elsif get_hand_value(h, card_values) == 21
+        break
+      end
+      if choice == 'empty' || choice == 'stay'
+        break
+      end
+    end
+  end
+end
+
+def player_split_hand(player_hand, dealer_hand, card_values, rem_deck)
+    # binding.pry
+    if double_aces?(player_hand[0], rem_deck)
+      display_hand(player_hand.slice(0), card_values)
+      split_hand(player_hand, 0, 1, rem_deck) if split?(player_hand, 0)
+      game_screen(dealer_hand, player_hand, card_values)
+    elsif splittable?(player_hand[0], card_values, rem_deck)
+      display_hand(player_hand.slice(0), card_values)
+      if split?(player_hand, 0)
+        split_hand(player_hand, 0, 1, rem_deck)
+        game_screen(dealer_hand, player_hand, card_values)
+        # binding.pry
+        if splittable?(player_hand[0], card_values, rem_deck)
+          puts ""
+          display_hand(player_hand.slice(0), card_values)
+          puts "Hand total: #{get_hand_value(player_hand[0], card_values)}"
+          split_hand(player_hand, 0, 2, rem_deck) if split?(player_hand, 0)
+          game_screen(dealer_hand, player_hand, card_values)
+        end
+        # binding.pry
+        if splittable?(player_hand[1], card_values, rem_deck)
+          puts ""
+          display_hand(player_hand.slice(1), card_values)
+          puts "Hand total: #{get_hand_value(player_hand[1], card_values)}"
+          split_hand(player_hand, 1, 2, rem_deck) if split?(player_hand, 1)
+          game_screen(dealer_hand, player_hand, card_values)
+        end
+      end
+    end
+end
+
 def dealer_turn(dealer_hand, hidden_card, player_hand, rem_deck, card_values, scores)
   flip(dealer_hand, hidden_card)
   sleep 0.5
@@ -196,7 +254,7 @@ end
 def dealer_hit?(dealer_hand, hand_value, best_player_score)
   # return true if hand_value < best_player_score
   return true if hand_value < 17
-  if hand_value == 17 && dealer_hand[0].flatten.any?("ace") && dealer_hand[0] == 2
+  if hand_value == 17 && dealer_hand[0].flatten.any?("ace") && dealer_hand[0].size == 2
     return true
   end
   return false if hand_value >= 17
@@ -204,25 +262,28 @@ end
 
 def game_screen(dealer_hand, player_hand, card_values)
   system("clear")
+  puts WELCOME_MESSAGE
   puts "-$-$-$-$-$-$-$-$-$-$-$-$-$-$-$-$-$-$-$-$-$-$-$-$-$-$-$-$-$-$-$-$-$-"
   puts ""
   puts "Dealer"
   display_hand(dealer_hand, card_values)
   dealer_hand_value = get_hand_value(dealer_hand[0].reject {|m| m == [" hidden", " hidden"]}, card_values)
   puts "Total: #{dealer_hand_value}"
-  puts "\n\n\n\n\n\n"
+  puts "\n\n\n\n\n"
   puts "Player"
   display_hand(player_hand, card_values)
   player_hand_values = player_hand.each_with_object([]) do | (k, h), s |
     s << get_hand_value(player_hand[k], card_values)
   end
-  # p player_hand_values
+
   player_hand_values.each_with_index do |val, i|
     if val < 10
       print "Total: #{val} "
     else
       print "Total: #{val}"
     end
+    # binding.pry
+
     (player_hand[i].size * 9 + 3 - 9).times { |t| print " "}
   end
   puts ""
@@ -266,75 +327,19 @@ end
 loop do
   card_values = initialize_card_values
   rem_deck = []
+
   initialize_deck(card_values, rem_deck)
+
   loop do
     player_hand = { 0 => [] }
     dealer_hand = { 0 => [] }
     hidden_card = []
 
     start_deal(dealer_hand, player_hand, hidden_card, rem_deck)
-
     game_screen(dealer_hand, player_hand, card_values)
-    # puts "\n\n\n\n"
-    # display_hand(player_hand, card_values)
-    # puts "Hand total: #{get_hand_value(player_hand[1], card_values)}"
-
     puts ""
 
-    if double_aces?(player_hand[0], rem_deck)
-      display_hand(player_hand.slice(0), card_values)
-      split_hand(player_hand, 0, 1, rem_deck) if split?(player_hand, 0)
-      game_screen(dealer_hand, player_hand, card_values)
-    elsif splittable?(player_hand[0], card_values, rem_deck)
-      display_hand(player_hand.slice(0), card_values)
-      if split?(player_hand, 0)
-        split_hand(player_hand, 0, 1, rem_deck)
-        # player_hand.each { |_, h| hit(h, rem_deck)}
-        game_screen(dealer_hand, player_hand, card_values)
-
-        if splittable?(player_hand[0], card_values, rem_deck)
-          puts ""
-          display_hand(player_hand.slice(0), card_values)
-          puts "Hand total: #{get_hand_value(player_hand[0], card_values)}"
-          split_hand(player_hand, 0, 2, rem_deck) if split?(player_hand, 0)
-          # player_hand.each { |_, h| hit(h, rem_deck)}
-          game_screen(dealer_hand, player_hand, card_values)
-        end
-
-        if splittable?(player_hand[1], card_values, rem_deck)
-          puts ""
-          display_hand(player_hand.slice(1), card_values)
-          puts "Hand total: #{get_hand_value(player_hand[1], card_values)}"
-          split_hand(player_hand, 1, 2, rem_deck) if split?(player_hand, 1)
-          game_screen(dealer_hand, player_hand, card_values)
-        end
-      end
-    end
-
-    player_hand.each do |n, h|
-      loop do
-        game_screen(dealer_hand, player_hand, card_values)
-        puts ""
-        display_hand(player_hand.slice(n), card_values)
-        puts "Player score: #{get_hand_value(player_hand[n], card_values)}"
-        if get_hand_value(h, card_values) < 21
-          choice = get_turn(h, rem_deck, n)
-          if choice == 'hit'
-            hit(h, rem_deck)
-          end
-        end
-        if get_hand_value(h, card_values) > 21
-          puts "bust!"
-          break
-        elsif get_hand_value(h, card_values) == 21
-          puts "21!"
-          break
-        end
-        if choice == 'stay'
-          break
-        end
-      end
-    end
+    player_turn(player_hand, dealer_hand, card_values, rem_deck)
 
     player_scores = player_hand.each_with_object([]) do |(n, h), s|
       if get_hand_value(player_hand[n], card_values) <= 21
