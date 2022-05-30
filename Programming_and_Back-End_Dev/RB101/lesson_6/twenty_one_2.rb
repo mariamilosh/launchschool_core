@@ -41,6 +41,49 @@ def lower_border
   puts ""
 end
 
+def get_num_decks
+  intro
+  loop do
+    puts "How many decks? (1-8)"
+    num_decks = gets.chomp.to_i
+    if (1..8).any?(num_decks)
+      return num_decks
+    end
+    puts "Answer not valid. Pleas enter a number 1 - 8"
+  end
+end
+
+# Initialize deck
+# Array of [card, {suit, symbol, chr, buf, [value]}]
+# Specify number of decks
+def initialize_shoe( num = 1 )
+  shoe = []
+  num.times do | i |
+    SUITS.each do | suit, sym |
+      (2..10).each do | num_card |
+        if num_card == 10
+          buf = ''
+          shoe << [ num_card.to_s, { 'suit' => suit, 'symbol' => sym,
+                                    'chr' => num_card.to_s, 'buf' => buf,
+                                    'value' => [num_card] }]
+        else
+          buf = ' '
+          shoe << [ num_card.to_s, { 'suit' => suit, 'symbol' => sym,
+                                    'chr' => num_card.to_s, 'buf' => buf,
+                                    'value' => [num_card] }]
+        end
+      end
+      FACE_CARDS.each do | card, value |
+        buf = ' '
+        shoe << [ card.to_s, { 'suit' => suit, 'symbol' => sym,
+                              'chr' => card[0].upcase, 'buf' => buf,
+                              'value' => value }]
+      end
+    end
+  end
+  return shoe
+end
+
 def deal_hand_animation(cards, name, lines, score_text, last_row = false)
    lines.times { |i| puts "" }
    puts name
@@ -86,37 +129,6 @@ def deal_starting_hand(player_hand, dealer_hand)
   deal_hand_animation(dealer_frames[1], "Dealer", d_vspace, score_text)
   deal_hand_animation(player_frames[1], "Player", p_vspace, score_text, true)
   sleep 1
-end
-
-# Initialize deck
-# Array of [card, {suit, symbol, chr, buf, [value]}]
-# Specify number of decks
-def initialize_shoe( num = 1 )
-  shoe = []
-  num.times do | i |
-    SUITS.each do | suit, sym |
-      (2..10).each do | num_card |
-        if num_card == 10
-          buf = ''
-          shoe << [ num_card.to_s, { 'suit' => suit, 'symbol' => sym,
-                                    'chr' => num_card.to_s, 'buf' => buf,
-                                    'value' => [num_card] }]
-        else
-          buf = ' '
-          shoe << [ num_card.to_s, { 'suit' => suit, 'symbol' => sym,
-                                    'chr' => num_card.to_s, 'buf' => buf,
-                                    'value' => [num_card] }]
-        end
-      end
-      FACE_CARDS.each do | card, value |
-        buf = ' '
-        shoe << [ card.to_s, { 'suit' => suit, 'symbol' => sym,
-                              'chr' => card[0].upcase, 'buf' => buf,
-                              'value' => value }]
-      end
-    end
-  end
-  return shoe
 end
 
 def start_deal(player_hand, dealer_hand, hidden_card, shoe)
@@ -298,12 +310,12 @@ def get_turn_choice(hand, shoe)
 # hand[1]><hand[3] and or hand[2]><hand[4]
   if not deck_empty?(shoe)
     loop do
-      prompt("Hit or stay?")
+      prompt("Hit or stand?")
       turn = gets.chomp.downcase
       if turn == 'hit' || turn == 'h'
         return 'hit'
-      elsif turn == 'stay' || turn == 's'
-        return 'stay'
+      elsif turn == 'stand' || turn == 's'
+        return 'stand'
       end
     end
     puts "Invalid response"
@@ -330,7 +342,7 @@ def get_player_turn(player_hand, dealer_hand, shoe)
         break
       end
 
-      if choice == 'empty' || choice == 'stay'
+      if choice == 'empty' || choice == 'stand'
         break
       end
     end
@@ -399,8 +411,9 @@ def score_round(player_hand, dealer_hand)
 end
 
 loop do
+  num_decks = get_num_decks
   loop do
-    shoe = initialize_shoe(1)
+    shoe = initialize_shoe(num_decks)
     player_hand = [[]]
     dealer_hand = [[]]
     hidden_card = []
@@ -417,7 +430,6 @@ loop do
       break
     end
   end
-  # clear_screen
   prompt("Start a new game? (y/n)")
   answer = gets.chomp.downcase
   break unless answer == "y"
