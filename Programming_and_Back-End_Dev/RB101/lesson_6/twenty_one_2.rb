@@ -5,8 +5,10 @@
 require 'pry'
 
 CLEAR_CMD = 'clear'
-SUITS = {'hearts'=>'<3', 'diamonds' => '<>', 'spades' => '()', 'clubs' => '%%' }
-FACE_CARDS = {'king' => [10], 'queen'=> [10], 'jack' => [10], 'ace' => [1, 11]}
+SUITS = { 'hearts' => '<3', 'diamonds' => '<>', 'spades' => '()',
+          'clubs' => '%%' }
+FACE_CARDS = { 'king' => [10], 'queen' => [10], 'jack' => [10],
+               'ace' => [1, 11] }
 WELCOME_MESSAGE = <<-MSG
  $-----------------------$
    Welcome to Blackjack!
@@ -21,7 +23,7 @@ WELCOME_MESSAGE = <<-MSG
 
 MSG
 
-def prompt( text )
+def prompt(text)
   puts "=> #{text}"
 end
 
@@ -56,26 +58,26 @@ end
 # Initialize deck
 # Array of [card, {suit, symbol, chr, buf, [value]}]
 # Specify number of decks
-def initialize_shoe( num = 1 )
+def initialize_shoe(num = 1)
   shoe = []
-  num.times do | i |
-    SUITS.each do | suit, sym |
-      (2..10).each do | num_card |
+  num.times do
+    SUITS.each do |suit, sym|
+      (2..10).each do |num_card|
         if num_card == 10
           buf = ''
-          shoe << [ num_card.to_s, { 'suit' => suit, 'symbol' => sym,
+          shoe << [num_card.to_s, { 'suit' => suit, 'symbol' => sym,
                                     'chr' => num_card.to_s, 'buf' => buf,
                                     'value' => [num_card] }]
         else
           buf = ' '
-          shoe << [ num_card.to_s, { 'suit' => suit, 'symbol' => sym,
+          shoe << [num_card.to_s, { 'suit' => suit, 'symbol' => sym,
                                     'chr' => num_card.to_s, 'buf' => buf,
                                     'value' => [num_card] }]
         end
       end
-      FACE_CARDS.each do | card, value |
+      FACE_CARDS.each do |card, value|
         buf = ' '
-        shoe << [ card.to_s, { 'suit' => suit, 'symbol' => sym,
+        shoe << [card.to_s, { 'suit' => suit, 'symbol' => sym,
                               'chr' => card[0].upcase, 'buf' => buf,
                               'value' => value }]
       end
@@ -85,11 +87,11 @@ def initialize_shoe( num = 1 )
 end
 
 def deal_hand_animation(cards, name, lines, score_text, last_row = false)
-   lines.times { |i| puts "" }
-   puts name
-   display_hand(cards)
-   puts score_text
-   lower_border if last_row
+  lines.times { puts "" }
+  puts name
+  display_hand(cards)
+  puts score_text
+  lower_border if last_row
 end
 
 def between_frames
@@ -104,17 +106,15 @@ def deal_starting_hand(player_hand, dealer_hand)
   d_vspace = 0
   score_text = ""
   cmbn_vspace = p_vspace + card_height
-  player_frames = []
-  dealer_frames = []
   player_frames = [[[player_hand[0][0]]], [player_hand[0]]]
   dealer_frames = [[[dealer_hand[0][0]]], [dealer_hand[0]]]
 
   clear_screen
   intro
   puts "Dealer"
-  cmbn_vspace.times { |i| puts "" }
+  cmbn_vspace.times { puts "" }
   puts "Player"
-  card_height.times { |i| puts ""}
+  card_height.times { puts "" }
   lower_border
   between_frames
   puts "Dealer"
@@ -137,8 +137,9 @@ def start_deal(player_hand, dealer_hand, hidden_card, shoe)
     hit(hidden_card, shoe)
     hit(player_hand[0], shoe)
     hit(dealer_hand[0], shoe)
-    dealer_hand[0].unshift(['hidden', {'suit' => ' ', 'symbol' => '  ',
-                            'chr' => ' ', 'buf' => ' ', 'value' => [0] }])
+    dealer_hand[0].unshift(['hidden', { 'suit' => ' ', 'symbol' => '  ',
+                                        'chr' => ' ', 'buf' => ' ',
+                                        'value' => [0] }])
     deal_starting_hand(player_hand, dealer_hand)
   end
 end
@@ -189,7 +190,7 @@ def game_screen(player_hand, dealer_hand)
     else
       print "Total: #{val}"
     end
-    (player_hand[i].size * 9 + 3 - 9).times { |t| print " "}
+    (player_hand[i].size * 9 + 3 - 9).times { print " " }
   end
 
   puts ""
@@ -221,23 +222,23 @@ def get_hand_value(hand)
     return val_arr.min
   end
 end
-
-def hit?(hand)
-  loop do
-    prompt("Hit or stay? (h/s)")
-    answer = gets.chomp.downcase
-    return "hit" if answer == 'h' || answer == 'hit'
-    return "stay" if answer == 's' || answer == 'stay'
-    prompt("Answer not valid")
-  end
-end
+#
+# def hit?(hand)
+#   loop do
+#     prompt("Hit or stay? (h/s)")
+#     answer = gets.chomp.downcase
+#     return "hit" if answer == 'h' || answer == 'hit'
+#     return "stay" if answer == 's' || answer == 'stay'
+#     prompt("Answer not valid")
+#   end
+# end
 
 def hit(hand, shoe)
   hand.push(deal_card(shoe))
 end
 
 def deal_card(shoe)
-  shoe.delete(shoe.sample) if not deck_empty?(shoe)
+  shoe.delete(shoe.sample) if !deck_empty?(shoe)
 end
 
 def double_aces?(hand, shoe)
@@ -254,7 +255,7 @@ def splittable?(hand, shoe)
   return false if hand.size > 2
   vals = []
   hand.each do |h|
-      vals << h[1]['value']
+    vals << h[1]['value']
   end
   vals.uniq.size == 1
 end
@@ -278,37 +279,34 @@ def player_split_choice(player_hand, dealer_hand, shoe)
     display_hand(player_hand)
     if split?
       split_hand!(player_hand, shoe)
-      hand_1 = player_hand[0]
-      hand_2 = player_hand[1]
-      if splittable?(hand_1, shoe)
-        player_hand.delete(hand_1)
-        split_hand!([hand_1], shoe)
-        player_hand.insert(0, hand_1)
+      hand1 = player_hand[0]
+      hand2 = player_hand[1]
+      if splittable?(hand1, shoe)
+        player_hand.delete(hand1)
+        split_hand!([hand1], shoe)
+        player_hand.insert(0, hand1)
       end
-      if splittable?(hand_2, shoe)
-        hand_1 = hand[0]
-        player_hand.delete(hand_1)
-        split_hand!([hand_1], shoe)
-        player_hand.push(hand_1)
+      if splittable?(hand2, shoe)
+        hand1 = hand[0]
+        player_hand.delete(hand1)
+        split_hand!([hand1], shoe)
+        player_hand.push(hand1)
       end
     end
   end
 end
 
 def split_hand!(hand, shoe)
-  slice_1 = hand[0].slice!(1)
-  slice_0 = hand[0].slice!(0)
-  hand[0] << slice_0
-  hand << [slice_1]
+  slice1 = hand[0].slice!(1)
+  slice0 = hand[0].slice!(0)
+  hand[0] << slice0
+  hand << [slice1]
   hit(hand[0], shoe)
   hit(hand[1], shoe)
 end
 
-def get_turn_choice(hand, shoe)
-# hand[1] split into hand[1], hand[2]
-# deal cards to hand[1] and hand[2]
-# hand[1]><hand[3] and or hand[2]><hand[4]
-  if not deck_empty?(shoe)
+def get_turn_choice(_hand, shoe)
+  if !deck_empty?(shoe)
     loop do
       prompt("Hit or stand?")
       turn = gets.chomp.downcase
@@ -327,7 +325,7 @@ end
 def get_player_turn(player_hand, dealer_hand, shoe)
   player_split_choice(player_hand, dealer_hand, shoe)
 
-  player_hand.each do | hand |
+  player_hand.each do |hand|
     loop do
       game_screen(player_hand, dealer_hand)
       display_hand([hand])
@@ -356,8 +354,8 @@ def dealer_turn(dealer_hand, hidden_card, player_hand, shoe)
   loop do
     dealer_hand_value = get_hand_value(dealer_hand[0])
     game_screen(player_hand, dealer_hand)
-    break if not dealer_hit?(dealer_hand, dealer_hand_value)
-    if not deck_empty?(shoe)
+    break if !dealer_hit?(dealer_hand, dealer_hand_value)
+    if !deck_empty?(shoe)
       hit(dealer_hand[0], shoe)
       sleep 1.5
     else
@@ -368,14 +366,16 @@ def dealer_turn(dealer_hand, hidden_card, player_hand, shoe)
 end
 
 def flip(dealer_hand, hidden_card)
-  dealer_hand[0].delete(['hidden', {'suit' => ' ', 'symbol' => '  ',
-                          'chr' => ' ', 'buf' => ' ', 'value' => [0] }])
+  dealer_hand[0].delete(['hidden', { 'suit' => ' ', 'symbol' => '  ',
+                                     'chr' => ' ', 'buf' => ' ',
+                                     'value' => [0] }])
   dealer_hand[0] << hidden_card.flatten(1)
 end
 
 def dealer_hit?(dealer_hand, hand_value)
   return true if hand_value < 17
-  if hand_value == 17 && dealer_hand[0].flatten.any?("ace") && dealer_hand[0].size == 2
+  if hand_value == 17 && dealer_hand[0].flatten.any?("ace") &&
+     dealer_hand[0].size == 2
     return true
   end
   return false if hand_value >= 17
@@ -393,7 +393,7 @@ def score_round(player_hand, dealer_hand)
   dealer_hv = get_hand_value(dealer_hand[0])
   puts "Dealer score: #{dealer_hv}"
   puts "Dealer went bust!" if dealer_hv > 21
-  player_hand.each_with_index do |n, i|
+  player_hand.each_with_index do |_, i|
     puts ""
     player_hv = get_hand_value(player_hand[i])
     display_hand([player_hand[i]])
@@ -435,4 +435,4 @@ loop do
   break unless answer == "y"
 end
 puts ""
-puts "Goodbye. Thanks for playing!"
+puts "Thanks for playing! Goodbye."
