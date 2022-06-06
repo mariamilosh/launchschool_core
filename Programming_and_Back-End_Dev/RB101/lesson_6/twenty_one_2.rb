@@ -51,7 +51,7 @@ def get_num_decks
     if (1..8).any?(num_decks)
       return num_decks
     end
-    puts "Answer not valid. Pleas enter a number 1 - 8"
+    puts "Answer not valid. Please enter a number 1 - 8"
   end
 end
 
@@ -132,16 +132,14 @@ def deal_starting_hand(player_hand, dealer_hand)
 end
 
 def start_deal(player_hand, dealer_hand, hidden_card, shoe)
-  if four_cards_left?(shoe)
-    hit(player_hand[0], shoe)
-    hit(hidden_card, shoe)
-    hit(player_hand[0], shoe)
-    hit(dealer_hand[0], shoe)
-    dealer_hand[0].unshift(['hidden', { 'suit' => ' ', 'symbol' => '  ',
-                                        'chr' => ' ', 'buf' => ' ',
-                                        'value' => [0] }])
-    deal_starting_hand(player_hand, dealer_hand)
-  end
+  hit(player_hand[0], shoe)
+  hit(hidden_card, shoe)
+  hit(player_hand[0], shoe)
+  hit(dealer_hand[0], shoe)
+  dealer_hand[0].unshift(['hidden', { 'suit' => ' ', 'symbol' => '  ',
+                                      'chr' => ' ', 'buf' => ' ',
+                                      'value' => [0] }])
+  deal_starting_hand(player_hand, dealer_hand)
 end
 
 def display_hand(hands)
@@ -369,7 +367,7 @@ def flip(dealer_hand, hidden_card)
   dealer_hand[0].delete(['hidden', { 'suit' => ' ', 'symbol' => '  ',
                                      'chr' => ' ', 'buf' => ' ',
                                      'value' => [0] }])
-  dealer_hand[0] << hidden_card.flatten(1)
+  dealer_hand[0].insert(0, hidden_card.flatten(1))
 end
 
 def dealer_hit?(dealer_hand, hand_value)
@@ -386,7 +384,37 @@ def deck_empty?(shoe)
 end
 
 def four_cards_left?(shoe)
-  return true if shoe.size >= 4
+  return true if shoe.size <= 4
+end
+
+def place_cut_card(shoe)
+  rand(15..(shoe.size - 15))
+  # binding.pry
+end
+
+def shuffle_deck?(cut_card_index, shoe)
+  shoe.size <= cut_card_index
+end
+
+def shuffling
+  4.times do |i|
+    clear_screen
+    intro
+    print "Reshuffling deck"
+    i.times { print "."}
+    sleep 1
+  end
+end
+
+def another_hand?
+  puts ""
+  prompt("Another hand? (y/n)")
+  answer = gets.chomp.downcase
+  answer == 'y' || answer == 'yes'
+end
+
+def single_deck?(num_decks)
+  num_decks == 1
 end
 
 def score_round(player_hand, dealer_hand)
@@ -411,9 +439,13 @@ def score_round(player_hand, dealer_hand)
 end
 
 loop do
+  clear_screen
   num_decks = get_num_decks
+  shoe = initialize_shoe(num_decks)
+  cut_card_index = place_cut_card(shoe)
+  # binding.pry
+  round = 1
   loop do
-    shoe = initialize_shoe(num_decks)
     player_hand = [[]]
     dealer_hand = [[]]
     hidden_card = []
@@ -421,13 +453,27 @@ loop do
     get_player_turn(player_hand, dealer_hand, shoe)
     dealer_turn(dealer_hand, hidden_card, player_hand, shoe)
     score_round(player_hand, dealer_hand)
-    if four_cards_left?(shoe)
-      puts ""
-      prompt("Another hand? (y/n)")
-      answer = gets.chomp.downcase
-      break unless answer == "y"
+
+    if single_deck?(num_decks)
+      if round == 4
+        prompt("Last Round!")
+      end
+      if round == 5
+        prompt("Game Over")
+        break
+      end
+      break unless another_hand?
+      round += 1
+    elsif four_cards_left?(shoe)
+      puts "Last round before shuffle"
+      break unless another_hand?
+    elsif shuffle_deck?(cut_card_index, shoe)
+      break unless another_hand?
+      shuffling
+      shoe = initialize_shoe(num_decks)
+      cut_card_index = place_cut_card(shoe)
     else
-      break
+      break unless another_hand?
     end
   end
   prompt("Start a new game? (y/n)")
