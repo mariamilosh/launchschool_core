@@ -433,6 +433,17 @@ ANIMATION_5 = <<-MSG
 
 
 MSG
+ANIMATION_4 = <<-MSG
+
+     $*       *$
+   *    $   * $*
+      *       *$
+    $         $*
+   *$*$*$*   $*$*
+
+
+
+MSG
 def money_flash
   system('clear')
   puts ANIMATION_4

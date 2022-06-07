@@ -43,7 +43,7 @@ def lower_border
   puts ""
 end
 
-def get_num_decks
+def how_many_decks?
   intro
   loop do
     puts "How many decks? (1-8)"
@@ -168,7 +168,7 @@ def game_screen(player_hand, dealer_hand)
   intro
   puts "Dealer"
   display_hand(dealer_hand)
-  dealer_hand_value = get_hand_value(dealer_hand[0])
+  dealer_hand_value = total_hand_value(dealer_hand[0])
   puts "Total: #{dealer_hand_value}"
   puts "\n\n\n\n\n"
   puts "Player"
@@ -177,7 +177,7 @@ def game_screen(player_hand, dealer_hand)
 
   player_hand.each_with_index do |hand, i|
     player_hand_totals << []
-    player_hand_totals[i] = get_hand_value(hand)
+    player_hand_totals[i] = total_hand_value(hand)
   end
 
   player_hand_totals.each_with_index do |val, i|
@@ -196,11 +196,11 @@ def game_screen(player_hand, dealer_hand)
 end
 
 def natural_blackjack?(hand)
-  true if get_hand_value(hand) == 21 && hand.size == 2
+  true if total_hand_value(hand) == 21 && hand.size == 2
 end
 
 # Find highest value of hand that does not exceed 21
-def get_hand_value(hand)
+def total_hand_value(hand)
   hand_values = []
   hand.each { |card| hand_values << card[1]['value'] }
   ace_values = hand_values.select { |card| card.size > 1 }
@@ -220,16 +220,6 @@ def get_hand_value(hand)
     return val_arr.min
   end
 end
-#
-# def hit?(hand)
-#   loop do
-#     prompt("Hit or stay? (h/s)")
-#     answer = gets.chomp.downcase
-#     return "hit" if answer == 'h' || answer == 'hit'
-#     return "stay" if answer == 's' || answer == 'stay'
-#     prompt("Answer not valid")
-#   end
-# end
 
 def hit(hand, shoe)
   hand.push(deal_card(shoe))
@@ -285,7 +275,7 @@ def player_split_choice(player_hand, dealer_hand, shoe)
         player_hand.insert(0, hand1)
       end
       if splittable?(hand2, shoe)
-        hand1 = hand[0]
+        hand1 = player_hand[0]
         player_hand.delete(hand1)
         split_hand!([hand1], shoe)
         player_hand.push(hand1)
@@ -327,14 +317,14 @@ def get_player_turn(player_hand, dealer_hand, shoe)
     loop do
       game_screen(player_hand, dealer_hand)
       display_hand([hand])
-      puts "Player score: #{get_hand_value(hand)}"
-      if get_hand_value(hand) < 21
+      puts "Player score: #{total_hand_value(hand)}"
+      if total_hand_value(hand) < 21
         choice = get_turn_choice(hand, shoe)
 
         if choice == 'hit'
           hit(hand, shoe)
         end
-      elsif get_hand_value(hand) > 21 || get_hand_value(hand) == 21
+      elsif total_hand_value(hand) > 21 || total_hand_value(hand) == 21
         break
       end
 
@@ -350,7 +340,7 @@ def dealer_turn(dealer_hand, hidden_card, player_hand, shoe)
   flip(dealer_hand, hidden_card)
   sleep 0.5
   loop do
-    dealer_hand_value = get_hand_value(dealer_hand[0])
+    dealer_hand_value = total_hand_value(dealer_hand[0])
     game_screen(player_hand, dealer_hand)
     break if !dealer_hit?(dealer_hand, dealer_hand_value)
     if !deck_empty?(shoe)
@@ -388,7 +378,7 @@ def four_cards_left?(shoe)
 end
 
 def place_cut_card(shoe)
-  rand(15..(shoe.size - 15))
+  rand(15..(shoe.size / 2))
   # binding.pry
 end
 
@@ -401,7 +391,7 @@ def shuffling
     clear_screen
     intro
     print "Reshuffling deck"
-    i.times { print "."}
+    i.times { print "." }
     sleep 1
   end
 end
@@ -418,12 +408,12 @@ def single_deck?(num_decks)
 end
 
 def score_round(player_hand, dealer_hand)
-  dealer_hv = get_hand_value(dealer_hand[0])
+  dealer_hv = total_hand_value(dealer_hand[0])
   puts "Dealer score: #{dealer_hv}"
   puts "Dealer went bust!" if dealer_hv > 21
   player_hand.each_with_index do |_, i|
     puts ""
-    player_hv = get_hand_value(player_hand[i])
+    player_hv = total_hand_value(player_hand[i])
     display_hand([player_hand[i]])
     puts "Player score: #{player_hv}"
     if player_hv > 21
@@ -440,7 +430,7 @@ end
 
 loop do
   clear_screen
-  num_decks = get_num_decks
+  num_decks = how_many_decks?
   shoe = initialize_shoe(num_decks)
   cut_card_index = place_cut_card(shoe)
   # binding.pry
