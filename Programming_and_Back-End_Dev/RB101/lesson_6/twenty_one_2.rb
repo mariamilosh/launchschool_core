@@ -72,27 +72,30 @@ def initialize_shoe(num = 1)
   num.times do
     SUITS.each do |suit, sym|
       (2..10).each do |num_card|
+        value = [num_card]
+        chr = num_card.to_s
         if num_card == 10
           buf = ''
-          shoe << [num_card.to_s, { 'suit' => suit, 'symbol' => sym,
-                                    'chr' => num_card.to_s, 'buf' => buf,
-                                    'value' => [num_card] }]
+          add_card_to_shoe(shoe, num_card, suit, sym, chr, buf, value)
         else
           buf = ' '
-          shoe << [num_card.to_s, { 'suit' => suit, 'symbol' => sym,
-                                    'chr' => num_card.to_s, 'buf' => buf,
-                                    'value' => [num_card] }]
+          add_card_to_shoe(shoe, num_card, suit, sym, chr, buf, value)
         end
       end
       FACE_CARDS.each do |card, value|
         buf = ' '
-        shoe << [card.to_s, { 'suit' => suit, 'symbol' => sym,
-                              'chr' => card[0].upcase, 'buf' => buf,
-                              'value' => value }]
+        chr = card[0].upcase
+        add_card_to_shoe(shoe, card, suit, sym, chr, buf, value)
       end
     end
   end
-  return shoe
+  shoe
+end
+
+def add_card_to_shoe(shoe, card, suit, sym, chr, buf, value)
+  shoe << [card.to_s, { 'suit' => suit, 'symbol' => sym,
+                        'chr' => chr, 'buf' => buf,
+                        'value' => value }]
 end
 
 def deal_hand_animation(cards, name, lines, score_text, last_row = false)
@@ -119,8 +122,8 @@ def deal_starting_hand(player_hand, dealer_hand, bankroll)
   d_vspace = 0
   score_text = ""
   cmbn_vspace = p_vspace + card_height
-  player_frames = [[{"hand"=>[player_hand[0]["hand"][0]]}], player_hand]
-  dealer_frames = [[{"hand"=>[dealer_hand[0]["hand"][0]]}], dealer_hand]
+  player_frames = [[{ "hand" => [player_hand[0]["hand"][0]] }], player_hand]
+  dealer_frames = [[{ "hand" => [dealer_hand[0]["hand"][0]] }], dealer_hand]
 
   clear_screen
   intro
@@ -219,7 +222,7 @@ def game_screen(player_hand, dealer_hand, bankroll)
   print_bankroll(bankroll)
   puts "Dealer"
   display_hand(dealer_hand)
-  dealer_hand_value = total_hand_value(dealer_hand[0]["hand"])
+  dealer_hand_value = total_hand_value(dealer_hand[0]['hand'])
   puts "Total: #{dealer_hand_value}"
   puts "\n\n\n\n\n"
   puts "Player"
@@ -228,25 +231,25 @@ def game_screen(player_hand, dealer_hand, bankroll)
 
   player_hand.each_with_index do |hand, i|
     player_hand_totals << []
-    player_hand_totals[i] = total_hand_value(hand["hand"])
+    player_hand_totals[i] = total_hand_value(hand['hand'])
   end
 
   player_hand_totals.each_with_index do |val, i|
     if val < 10
       print "Total: #{val} "
-    elsif natural_blackjack?(player_hand[i]["hand"])
+    elsif natural_blackjack?(player_hand[i]['hand'])
       print "Blackjack"
     else
       print "Total: #{val}"
     end
-    (player_hand[i]["hand"].size * 9 + 3 - 9).times { print " " }
+    (player_hand[i]['hand'].size * 9 + 3 - 9).times { print " " }
   end
   puts ""
 
   player_hand.each_with_index do |hand, i|
-    print "Bet: #{hand["bet"]}"
-    bet_width = hand["bet"].to_s.size
-    (player_hand[i]["hand"].size * 9 + 3 - (5 + bet_width)).times { print " " }
+    print "Bet: #{hand['bet']}"
+    bet_width = hand['bet'].to_s.size
+    (player_hand[i]['hand'].size * 9 + 3 - (5 + bet_width)).times { print " " }
   end
 
   puts ""
@@ -271,10 +274,11 @@ def total_hand_value(hand)
   val_arr.map! { |c| c + card_values.flatten.sum }
 
   # Return number closest to 21 but not over
+  # Check if the max possible value is less than 21, if so return it
   if val_arr.select { |val| val <= 21 }.max
     return val_arr.select { |val| val <= 21 }.max
   else
-    return val_arr.min
+    val_arr.min
   end
 end
 
@@ -350,7 +354,7 @@ def split_hand!(hand, shoe, bankroll)
   slice1 = hand[0]["hand"].slice!(1)
   slice0 = hand[0]["hand"].slice!(0)
   hand[0]["hand"] << slice0
-  hand << {"hand" => [slice1], "bet" => hand[0]["bet"]}
+  hand << { "hand" => [slice1], "bet" => hand[0]["bet"] }
   bankroll["amount"] -= hand[0]["bet"]
   hit(hand[0]["hand"], shoe)
   hit(hand[1]["hand"], shoe)
@@ -369,26 +373,26 @@ def get_turn_choice(_hand, shoe)
     end
     puts "Invalid response"
   else
-    return 'empty'
+    'empty'
   end
 end
 
-def double_down(bet)
-  prompt("You can add up to $#{bet} to your bet.")
-  loop do
-    prompt("Enter an amount: ")
-    amount = gets.chomp
-    if amount.to_i.to_s == amount && amount.to_i <= bet && amount.to_i >= 0 &&
-       !amount.include?(".")
-      break
-    elsif amount.include?(".")
-      prompt("You must enter a whole number.")
-    else
-      prompt("That amount is invalid.")
-    end
-  end
-  bet = bet + amount.to_i
-end
+# def double_down(bet)
+#   prompt("You may add up to $#{bet} to your bet.")
+#   loop do
+#     prompt("Enter an amount: ")
+#     amount = gets.chomp
+#     if amount.to_i.to_s == amount && amount.to_i <= bet && amount.to_i >= 0 &&
+#        !amount.include?(".")
+#       break
+#     elsif amount.include?(".")
+#       prompt("You must enter a whole number.")
+#     else
+#       prompt("That amount is invalid.")
+#     end
+#   end
+#   bet += amount.to_i
+# end
 
 def update_bankroll(bankroll, bet)
   bankroll["amount"] -= bet
@@ -396,22 +400,22 @@ end
 
 def get_player_turn(player_hand, dealer_hand, shoe, bankroll)
   game_screen(player_hand, dealer_hand, bankroll)
-  return true if total_hand_value(player_hand[0]["hand"]) == 21
+  return true if total_hand_value(player_hand[0]['hand']) == 21
   player_split_choice(player_hand, dealer_hand, shoe, bankroll)
 
   player_hand.each do |hand|
     loop do
       game_screen(player_hand, dealer_hand, bankroll)
       display_hand([hand])
-      puts "Player score: #{total_hand_value(hand["hand"])}"
-      if total_hand_value(hand["hand"]) < 21
+      puts "Player score: #{total_hand_value(hand['hand'])}"
+      if total_hand_value(hand['hand']) < 21
         choice = get_turn_choice(hand, shoe)
 
         if choice == 'hit'
-          hit(hand["hand"], shoe)
+          hit(hand['hand'], shoe)
         end
-      elsif total_hand_value(hand["hand"]) > 21 ||
-            total_hand_value(hand["hand"]) == 21
+      elsif total_hand_value(hand['hand']) > 21 ||
+            total_hand_value(hand['hand']) == 21
         break
       end
 
@@ -443,8 +447,8 @@ end
 
 def flip(dealer_hand, hidden_card)
   dealer_hand[0]["hand"].delete(['hidden', { 'suit' => ' ', 'symbol' => '  ',
-                                     'chr' => ' ', 'buf' => ' ',
-                                     'value' => [0] }])
+                                             'chr' => ' ', 'buf' => ' ',
+                                             'value' => [0] }])
   dealer_hand[0]["hand"].insert(0, hidden_card.flatten(1))
 end
 
@@ -494,15 +498,20 @@ def single_deck?(num_decks)
   num_decks == 1
 end
 
-def score_round(player_hand, dealer_hand, bankroll)
+def score_round(player_hand, dealer_hand, totals, bankroll)
   dealer_hv = total_hand_value(dealer_hand[0]["hand"])
   player_hand.each do |hand|
     player_hv = total_hand_value(hand["hand"])
     if (dealer_hv > 21 || dealer_hv < player_hv) && player_hv <= 21
-      bankroll["amount"] += (hand["bet"] * WIN_MULTIPLIER).round(0)
+      winnings = (hand["bet"] * WIN_MULTIPLIER).round(0)
+      bankroll["amount"] += winnings
+      totals['won'] += winnings - hand["bet"]
     elsif dealer_hv == player_hv
       bankroll["amount"] += hand["bet"].round(0)
+    else
+      totals['lost'] += hand['bet']
     end
+    totals['hands'] += 1
   end
   print_scores(player_hand, dealer_hand, bankroll)
 end
@@ -521,7 +530,7 @@ def print_scores(player_hand, dealer_hand, bankroll)
       puts "bust!"
     elsif (dealer_hv > 21 || dealer_hv < player_hv) && player_hv <= 21
       puts "win!"
-      puts "+ $#{(hand["bet"] * WIN_MULTIPLIER).round(0)}"
+      puts "+ $#{(hand['bet'] * WIN_MULTIPLIER).round(0)}"
     elsif dealer_hv == player_hv
       puts "tie"
     else
@@ -530,16 +539,16 @@ def print_scores(player_hand, dealer_hand, bankroll)
   end
 end
 
-def win_total(bankroll)
-  net_win_amt =  bankroll["amount"] - DEFAULT_BANKROLL
-  if net_win_amt > 0
-    puts "You made $#{net_win_amt} playing blackjack!"
-  elsif net_win_amt < 0
-    puts "You lost $#{net_win_amt.abs}. Better luck next time."
-  else
-    puts "You made $#{net_win_amt} playing blackjack. Congratulations."
+def print_totals(totals)
+  puts "Your total winnings: $#{totals['won']}"
+  puts "Your total losses: $#{totals['lost']}"
+  net_total = totals['won'] - totals['lost']
+  puts "Your net total: $#{net_total}"
+  puts "You played #{totals['hands']} hands."
+  if totals['hands'] != 0
+    puts "You made an average of "\
+         "$#{(net_total.to_f / totals['hands']).round(2)} per hand."
   end
-  puts ""
 end
 
 def new_game?
@@ -555,25 +564,27 @@ loop do
   cut_card_index = place_cut_card(shoe)
   bankroll = { "amount" => DEFAULT_BANKROLL.dup }
   round = 1
+  totals = { 'won' => 0, 'lost' => 0, 'hands' => 0 }
+
   loop do
-    player_hand = [{'hand'=>[], 'bet'=>0}]
-    dealer_hand = [{'hand'=>[]}]
+    player_hand = [{ 'hand' => [], 'bet' => 0 }]
+    dealer_hand = [{ 'hand' => [] }]
     hidden_card = []
 
     if start_deal(player_hand, dealer_hand, hidden_card, shoe, bankroll)
-      unless get_player_turn(player_hand, dealer_hand, shoe, bankroll)
+      if !get_player_turn(player_hand, dealer_hand, shoe, bankroll)
         dealer_turn(dealer_hand, hidden_card, player_hand, shoe, bankroll)
-        score_round(player_hand, dealer_hand, bankroll)
+        score_round(player_hand, dealer_hand, totals, bankroll)
       else
         flip(dealer_hand, hidden_card)
         game_screen(player_hand, dealer_hand, bankroll)
-        dealer_hand_value = total_hand_value(dealer_hand[0]["hand"])
         if !natural_blackjack?(dealer_hand[0]["hand"])
           winnings = (player_hand[0]["bet"] * NATURAL_MULTIPLIER).round(0)
           puts "You won with a natural blackjack!"
           sleep 0.8
           puts "  + $#{winnings}"
           bankroll["amount"] += winnings
+          totals['won'] += winnings - player_hand[0]["bet"]
           game_screen(player_hand, dealer_hand, bankroll)
           puts "You won with a natural blackjack!"
           puts "  + $#{winnings}"
@@ -581,6 +592,7 @@ loop do
           puts "Sorry, you tied with the dealer, but you get to keep your bet."
           bankroll["amount"] += player_hand[0]["bet"]
         end
+        totals['hands'] += 1
       end
 
       if single_deck?(num_decks)
@@ -608,7 +620,8 @@ loop do
       break
     end
   end
-  win_total(bankroll)
+  puts ""
+  print_totals(totals)
   break unless new_game?
 end
 puts ""
