@@ -1,15 +1,15 @@
 # Welcome to Blackjack!
 # This is a graphical command line game
 # The house always wins.
-
 require 'pry'
-
 # Must be an integer
 MIN_BET = 5
 MAX_DECKS = 8
 DEFAULT_BANKROLL = 500
-WIN_MULTIPLIER = 1.3
-NATURAL_MULTIPLIER = 1.5
+
+# Set multiplier for a win and a win with a natural blackjack
+WIN_MULTIPLIER = 1.5
+NATURAL_MULTIPLIER = 2
 
 # System command for clearing command line
 CLEAR_CMD = 'clear'
@@ -57,7 +57,7 @@ def how_many_decks?
   loop do
     puts "How many decks? (1-#{MAX_DECKS})"
     num_decks = gets.chomp.to_i
-    if (1..8).any?(num_decks)
+    if (1..MAX_DECKS).any?(num_decks)
       return num_decks
     end
     puts "Answer not valid. Please enter a number 1 - 8"
