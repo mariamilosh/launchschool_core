@@ -1,0 +1,12 @@
+def my_method(a, b = 2, c = 3, d)
+  p [a, b, c, d]
+end
+
+my_method(4, 5, 6)
+
+
+Prints an array with a = 4, b = 5, c = 3, d = 6
+[4, 5, 3, 6]
+b and c are default arguments so they are assigned last. a is assigned the first
+argument (4), d is assigned the last argument (6), b is assigned the second
+argument (5) and there is none left over so c defaults to (3).

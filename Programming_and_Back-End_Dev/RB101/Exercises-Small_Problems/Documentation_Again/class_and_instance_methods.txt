@@ -1,0 +1,5 @@
+File::path returns the string representation of the path. It is a class method.
+File#path returns the pathname used to create file as a string. Does not
+normalize the name. It is an instance method.
+
+Class methods are called on a class. Instance methods are called on objects.
