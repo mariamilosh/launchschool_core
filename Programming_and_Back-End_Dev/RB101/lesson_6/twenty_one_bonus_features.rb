@@ -16,7 +16,7 @@ SUITS = ["\u2661", "\u2662", "\u2660", "\u2663"]
 FACE_CARDS = { 'king' => [10], 'queen' => [10], 'jack' => [10],
                'ace' => [1, 11] }
 
-WELCOME_MESSAGE = <<-MSG
+WELCOME_MESSAGE = <<-MSG 
  $-----------------------$
    Welcome to Blackjack!
  $-----------------------$
