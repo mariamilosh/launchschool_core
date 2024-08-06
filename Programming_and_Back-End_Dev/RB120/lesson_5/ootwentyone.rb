@@ -129,9 +129,9 @@ module Graphic_Controls
   def print_game_screen(bankroll, round)
     clear_screen
     print_intro(bankroll)
-    display_hands(round.dealer_round_hands)
+    display_hands(round.dealer_round_hands, round.dealer.name)
     print_lines(10)
-    display_hands(round.player_round_hands)
+    display_hands(round.player_round_hands, round.player.name)
     display_bets(round.player_round_hands)
     print_lines(1)
     print_boundary
@@ -141,9 +141,9 @@ module Graphic_Controls
   def print_score_screen(bankroll, round)
     clear_screen
     print_intro(bankroll)
-    display_hands(round.dealer_round_hands)
+    display_hands(round.dealer_round_hands, round.dealer.name)
     print_lines(10)
-    display_hands(round.player_round_hands)
+    display_hands(round.player_round_hands, round.player.name)
     display_bets(round.player_round_hands)
     display_scores(round.player_round_hands)
     display_winnings(round.player_round_hands, round.multipliers)
@@ -167,7 +167,8 @@ module Graphic_Controls
     card_graphic[row]
   end
 
-  def display_hands(hands)
+  def display_hands(hands, name=nil)
+    puts name if name
     0.upto(5) do |r|
       hands.each do |hand|
         display_hand(hand, r)
@@ -284,7 +285,7 @@ end
 
 class Actor
   include Scoring
-  attr_reader :hands
+  attr_reader :hands, :name
 
   def initialize
     @hands = []
@@ -328,6 +329,7 @@ class Player < Actor
     reset
     @bankroll = bankroll
     @min_bet = min_bet
+    @name = "Player"
   end
 
   def can_split?(hand)
@@ -376,6 +378,7 @@ class Dealer < Actor
   def initialize
     super
     @hand = @hands[0]
+    @name = "Dealer"
   end
 
   def hit?
@@ -577,7 +580,8 @@ end
 class Round
   include Scoring, Prompts, Graphic_Controls
 
-  attr_reader :player_round_hands, :dealer_round_hands, :multipliers
+  attr_reader :player_round_hands, :dealer_round_hands, :multipliers, 
+              :dealer, :player
 
   def initialize(shoe, player, dealer)
     @multipliers = Scoring::MULTIPLIERS
