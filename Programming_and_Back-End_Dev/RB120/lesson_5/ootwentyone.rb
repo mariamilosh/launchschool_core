@@ -12,15 +12,12 @@ module Prompts
     loop do
       prompt(text)
       answer = gets.chomp.downcase
-      if ['y', 'n'].include?(answer)
-        return answer == 'y'
-      else
-        prompt("Please answer using 'y' or 'n'.")
-      end
+      return answer == 'y' if ['y', 'n'].include?(answer)
+      prompt("Please answer using 'y' or 'n'.")
     end
   end
 
-  def split_hand?(hand)
+  def split_hand?
     yes_or_no?("Split hand? (y/n)")
   end
 
@@ -37,18 +34,14 @@ module Prompts
     loop do
       puts "How many decks?(#{min_decks}-#{max_decks})"
       num_decks = gets.chomp.to_i
-      if (min_decks..max_decks).include?(num_decks)
-        break
-      else
-        puts "Please enter an whole number between #{min_decks} and " \
-          "#{max_decks}."
-      end
+      break if (min_decks..max_decks).include?(num_decks)
+      puts "Please enter an whole number between #{min_decks} and #{max_decks}."
     end
     num_decks
   end
 
   def hit_response
-      yes_or_no?("Would you like to hit? (y/n)")
+    yes_or_no?("Would you like to hit? (y/n)")
   end
 
   def bet_amount(bankroll, min_bet)
@@ -66,10 +59,9 @@ module Prompts
   def tied_with_dealer
     prompt("Sorry, you tied with the dealer, but you get to keep your bet.")
   end
-  
 end
 
-module Graphic_Controls
+module GraphicControls
   CLEAR_CMD = 'clear'
   BOUNDARY = "-$-"
 
@@ -78,7 +70,7 @@ module Graphic_Controls
   end
 
   def welcome_message
-    <<-MSG 
+    <<-MSG
     $-----------------------$
       Welcome to Blackjack!
     $-----------------------$
@@ -182,13 +174,13 @@ module Graphic_Controls
   def display_totals(hands)
     hands.each do |hand|
       if hand.is_a?(Hand)
-        if hand.natural?
-          text = 'blackjack'
-        elsif hand.bust?
-          text = "Total: #{hand.value} 'bust'"
-        else
-          text = "Total: #{hand.value}"
-        end
+        text = if hand.natural?
+                 'blackjack'
+               elsif hand.bust?
+                 "Total: #{hand.value} 'bust'"
+               else
+                 "Total: #{hand.value}"
+               end
         buff = (hand.cards.size * 9) + 2 - text.length
         print text
         (1..buff).each { print " " }
@@ -212,7 +204,7 @@ module Graphic_Controls
   def display_winnings(hands, multipliers)
     hands.each do |hand|
       mult_num = multipliers[hand.result]
-      text = "#{mult_num < 0 ? "-" : "+"} $#{hand.bet * mult_num.abs}"
+      text = "#{mult_num < 0 ? '-' : '+'} $#{hand.bet * mult_num.abs}"
       print text
       if hands.size > 1
         buff = (hand.cards.size * 9) + 2 - text.length
@@ -223,17 +215,16 @@ module Graphic_Controls
   end
 
   def display_hand(hand, row)
-    if hand.is_a?(Hand)
-      hand.cards.each do |card|
-        print display_card(card, row)
-        print " "
-      end
-    end     
+    return unless hand.is_a?(Hand)
+    hand.cards.each do |card|
+      print display_card(card, row)
+      print " "
+    end
   end
 
   def display_scores(hands)
     hands.each do |hand|
-      text = "#{hand.result.to_s.sub(/_/, ' ')}"
+      text = hand.result.to_s.sub(/_/, ' ')
       print text
       if hands.size > 1
         buff = (hand.cards.size * 9) + 2 - text.length
@@ -247,7 +238,7 @@ end
 module Scoring
   WIN_MULTIPLIER = 1.5
   NATURAL_MULTIPLIER = 2
-  MULTIPLIERS = { natural_win: NATURAL_MULTIPLIER, win: WIN_MULTIPLIER, 
+  MULTIPLIERS = { natural_win: NATURAL_MULTIPLIER, win: WIN_MULTIPLIER,
                   lose: -1, tie: 1 }
 
   def natural_blackjack?(hands)
@@ -266,15 +257,15 @@ module Scoring
 
   def figure_result(player, dealer)
     player.hands.each do |hand|
-      if player.natural? && !dealer.natural? 
-        hand.result = :natural_win
-      elsif win?(hand, dealer.hand) 
-        hand.result = :win
-      elsif tie?(hand, dealer.hand)
-        hand.result = :tie
-      else
-        hand.result = :lose
-      end
+      hand.result = if player.natural? && !dealer.natural?
+                      :natural_win
+                    elsif win?(hand, dealer.hand)
+                      :win
+                    elsif tie?(hand, dealer.hand)
+                      :tie
+                    else
+                      :lose
+                    end
     end
   end
 
@@ -319,11 +310,9 @@ class Actor
 end
 
 class Player < Actor
-  include Prompts, Graphic_Controls
+  include Prompts, GraphicControls
 
-  attr_reader :bankroll
-
-  attr_writer :bankroll
+  attr_accessor :bankroll
 
   def initialize(bankroll, min_bet)
     reset
@@ -338,13 +327,13 @@ class Player < Actor
 
   def split?(hand)
     display_hands([hand])
-    split_hand?(hand)
+    split_hand?
   end
 
   def split(hand)
     hand_index = @hands.find_index(hand)
     new_hand = hand.split
-    @hands.insert(hand_index+1, new_hand)
+    @hands.insert(hand_index + 1, new_hand)
     hand.hit
     new_hand.hit
     new_hand
@@ -355,10 +344,9 @@ class Player < Actor
   end
 
   def hit?(hand)
-    if super 
-      display_hands([hand]) if @hands.size > 1
-      hit_response
-    end
+    return unless super
+    display_hands([hand]) if @hands.size > 1
+    hit_response
   end
 
   def place_bet
@@ -382,7 +370,7 @@ class Dealer < Actor
   end
 
   def hit?
-    (@hand.value == 17 && @hand.cards.map(&:rank).any?(:ace) && 
+    (@hand.value == 17 && @hand.cards.map(&:rank).any?(:ace) &&
      @hand.cards.size == 2) || @hand.value < 17
   end
 
@@ -400,17 +388,16 @@ end
 class Card
   attr_reader :rank, :suit, :abbreviation, :hard_value
   attr_accessor :is_soft
-  
+
   def initialize(rank, suit, abbrv, vals)
     if rank == :ace
       @is_soft = true
       @soft_value = vals[1]
-      @hard_value = vals[0]
     else
       @is_soft = false
       @soft_value = vals[0]
-      @hard_value = vals[0]
     end
+    @hard_value = vals[0]
     @suit = suit
     @rank = rank
     @abbreviation = abbrv
@@ -429,7 +416,7 @@ class Deck
   SUITS = { hearts: "\u2661", diamonds: "\u2662",
             spades: "\u2660", clubs: "\u2663" }
   FACE_CARDS = { ace: [1, 11], king: [10],
-                queen: [10], jack: [10] }
+                 queen: [10], jack: [10] }
 
   def initialize
     @cards = []
@@ -453,7 +440,7 @@ class Deck
 end
 
 class Shoe
-  include Prompts, Graphic_Controls
+  include Prompts, GraphicControls
   attr_reader :num_decks, :discard_pile
 
   def initialize(min_decks, max_decks)
@@ -477,7 +464,7 @@ class Shoe
 
   def deal_card
     @shuffle_next = true if @cards.size <= @cut_card_index
-    reset if @cards.size < 1
+    reset if @cards.empty?
     card_dealt = @cards.shift
     @discard_pile << card_dealt
     card_dealt
@@ -533,7 +520,7 @@ class Hand
     value > 21
   end
 
-  # detect if hand should be hardened 
+  # detect if hand should be hardened
   def hit(hide: false)
     new_card = add_card
     new_card = hide_card(new_card) if hide
@@ -552,23 +539,21 @@ class Hand
   end
 
   def adjust_values
-    if self.value > 21 && @cards.any?(&:is_soft)
-      @cards[@cards.find_index(&:is_soft)].is_soft = false
-    end
+    return unless value > 21 && @cards.any?(&:is_soft)
+    @cards[@cards.find_index(&:is_soft)].is_soft = false
   end
 
   # if split on aces, aces should be made soft again
   def split
     second_hand = Hand.new(@shoe, @bet)
-    @cards.each{|card| card.is_soft = true if card.rank==:ace}
+    @cards.each { |card| card.is_soft = true if card.rank == :ace }
     second_hand.cards << cards.pop
-    return second_hand
+    second_hand
   end
 
   protected
 
-  attr_writer :cards
-  attr_writer :bet
+  attr_writer :cards, :bet
 
   def add_card
     new_card = @shoe.deal_card
@@ -578,22 +563,23 @@ class Hand
 end
 
 class Round
-  include Scoring, Prompts, Graphic_Controls
+  include Scoring, Prompts, GraphicControls
 
-  attr_reader :player_round_hands, :dealer_round_hands, :multipliers, 
+  attr_reader :player_round_hands, :dealer_round_hands, :multipliers,
               :dealer, :player
 
   def initialize(shoe, player, dealer)
     @multipliers = Scoring::MULTIPLIERS
-    @player, @dealer, @shoe = player, dealer, shoe
-    @player_round_hands, @dealer_round_hands = [], []
+    @player = player
+    @dealer = dealer
+    @shoe = shoe
+    @player_round_hands = []
+    @dealer_round_hands = []
     @shoe.reset if @shoe.shuffle_next?
-    deal
-    player_turn
-    dealer_turn
-    update_score
+  end
+
+  def show_results
     print_score_screen(@player.bankroll, self)
-    close_out
   end
 
   def deal
@@ -630,12 +616,8 @@ class Round
       split_and_refresh(hands[0])
     elsif split_condition(@player.hands[0])
       split_and_refresh(@player.hands[0])
-      if split_condition(@player.hands[0])
-        split_and_refresh(@player.hands[0])
-      end
-      if split_condition(@player.hands[-1])
-        split_and_refresh(@player.hands[-1])
-      end
+      split_and_refresh(@player.hands[0]) if split_condition(@player.hands[0])
+      split_and_refresh(@player.hands[-1]) if split_condition(@player.hands[-1])
     end
   end
 
@@ -654,11 +636,8 @@ class Round
     @player.hands.each do |hand|
       loop do
         print_screen_with_delay(@player.bankroll, self)
-        if hand.value < 21 && @player.hit?(hand)
-          @player.hit(hand)
-        else
-          break
-        end
+        break unless hand.value < 21 && @player.hit?(hand)
+        @player.hit(hand)
       end
     end
   end
@@ -671,16 +650,16 @@ class Round
   def update_bankroll
     @player.hands.each do |hand|
       win_amount = hand.bet * @multipliers[hand.result]
-      if win_amount < 0
-        update_amount = 0 
-      else
-        update_amount = win_amount
-      end
+      update_amount = if win_amount < 0
+                        0
+                      else
+                        win_amount
+                      end
       @player.update_bankroll(update_amount)
     end
     @player.bankroll
   end
-  
+
   def flip_hidden_card
     @dealer.hand.reveal_hidden
     @dealer.hand.adjust_values
@@ -689,26 +668,25 @@ class Round
 
   # update Round hands variables to match player and dealer hands
   def refresh_hands
-    @player_round_hands = @player.hands.map{ |hand| hand }
-    @dealer_round_hands = @dealer.hands.map{ |hand| hand }
+    @player_round_hands = @player.hands.map { |hand| hand }
+    @dealer_round_hands = @dealer.hands.map { |hand| hand }
   end
 
   def dealer_turn
-    if !@player.natural?
-      print_game_screen(@player.bankroll, self)
-      sleep 0.5
-      flip_hidden_card
-      loop do
-        break if !@dealer.hit?
-        @dealer.hit
-        print_screen_with_delay(@player.bankroll, self)
-      end
+    return if @player.natural?
+    print_game_screen(@player.bankroll, self)
+    sleep 0.5
+    flip_hidden_card
+    loop do
+      break if !@dealer.hit?
+      @dealer.hit
+      print_screen_with_delay(@player.bankroll, self)
     end
   end
 
   # create copies of player and dealer hands within Round so they remain linked
   # to their Round once new Round starts.
-  # clear out existing hands for dealer and player so they start 
+  # clear out existing hands for dealer and player so they start
   # fresh next round.
   def close_out
     refresh_hands
@@ -718,7 +696,7 @@ class Round
 end
 
 class TOGame
-  include Prompts, Graphic_Controls
+  include Prompts, GraphicControls
 
   BANKROLL = 500
   MIN_BET = 5
@@ -730,6 +708,12 @@ class TOGame
       new_game
       loop do
         new_round
+        @current_round.deal
+        @current_round.player_turn
+        @current_round.dealer_turn
+        @current_round.update_score
+        @current_round.show_results
+        @current_round.close_out
         break unless new_round?
       end
       break unless new_game?
