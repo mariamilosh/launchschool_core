@@ -8,56 +8,14 @@ module Prompts
     puts "=> #{text} "
   end
 
-  def yes_or_no?(text)
-    loop do
-      prompt(text)
-      answer = gets.chomp.downcase
-      return answer == 'y' if ['y', 'n'].include?(answer)
-      prompt("Please answer using 'y' or 'n'.")
-    end
+  def yes_or_no?(text, pos_responses)
+    prompt(text)
+    answer = gets.chomp.downcase
+    valid_response?(answer, pos_responses)
   end
 
-  def split_hand?
-    yes_or_no?("Split hand? (y/n)")
-  end
-
-  def new_game?
-    yes_or_no?("Would you like to start a new game? (y/n)")
-  end
-
-  def new_round?
-    yes_or_no?("Would you like to play another round? (y/n)")
-  end
-
-  def how_many_decks?(min_decks, max_decks)
-    num_decks = 1
-    loop do
-      puts "How many decks?(#{min_decks}-#{max_decks})"
-      num_decks = gets.chomp.to_i
-      break if (min_decks..max_decks).include?(num_decks)
-      puts "Please enter an whole number between #{min_decks} and #{max_decks}."
-    end
-    num_decks
-  end
-
-  def hit_response
-    yes_or_no?("Would you like to hit? (y/n)")
-  end
-
-  def bet_amount(bankroll, min_bet)
-    bet = min_bet
-    loop do
-      print "Enter your bet: "
-      bet = gets.chomp.to_i
-      break if bet >= min_bet && bet <= bankroll
-      puts ""
-      puts "You must enter a number between #{min_bet} and #{bankroll}."
-    end
-    bet
-  end
-
-  def tied_with_dealer
-    prompt("Sorry, you tied with the dealer, but you get to keep your bet.")
+  def valid_response?(response, valid_responses)
+    valid_responses.map(&:downcase).include?(response)
   end
 end
 
@@ -85,15 +43,16 @@ module GraphicControls
     MSG
   end
 
-  def print_intro(bankroll = false)
+  def print_intro(bankroll = nil)
     clear_screen
     puts welcome_message
     print_boundary
-    print_bankroll(bankroll) if bankroll != false
+    print_bankroll(bankroll) if bankroll
   end
 
   def print_boundary
-    22.times { print BOUNDARY }
+    width = 22
+    width.times { print BOUNDARY }
     puts ""
   end
 
@@ -101,20 +60,10 @@ module GraphicControls
     num.times { puts "" }
   end
 
-  def shuffling_msg
-    (1..4).each do |i|
-      clear_screen
-      print_intro
-      puts ""
-      print "Reshuffling deck"
-      (1..i).each { print "." }
-      sleep 1
-    end
-  end
-
   def print_bankroll(bankroll)
+    line_spaces = 65
     text = "Bankroll: $#{bankroll}"
-    (65 - text.length).times { print " " }
+    (line_spaces - text.length).times { print " " }
     puts "Bankroll: $#{bankroll}"
   end
 
@@ -124,7 +73,6 @@ module GraphicControls
     display_hands(round.dealer_round_hands, round.dealer.name)
     print_lines(10)
     display_hands(round.player_round_hands, round.player.name)
-    display_bets(round.player_round_hands)
     print_lines(1)
     print_boundary
     print_lines(1)
@@ -135,10 +83,8 @@ module GraphicControls
     print_intro(bankroll)
     display_hands(round.dealer_round_hands, round.dealer.name)
     print_lines(10)
-    display_hands(round.player_round_hands, round.player.name)
-    display_bets(round.player_round_hands)
-    display_scores(round.player_round_hands)
-    display_winnings(round.player_round_hands, round.multipliers)
+    display_scores(round.player_round_hands, round.multipliers,
+                   round.player.name)
     print_lines(1)
     print_boundary
     print_lines(1)
@@ -161,14 +107,21 @@ module GraphicControls
 
   def display_hands(hands, name=nil)
     puts name if name
-    0.upto(5) do |r|
-      hands.each do |hand|
-        display_hand(hand, r)
-        print "  "
-      end
+    if hands.size > 3
+      display_hands(hands[0, 2])
       puts ""
+      display_hands(hands[2, 2])
+    else
+      0.upto(5) do |r|
+        hands.each do |hand|
+          display_hand(hand, r)
+          print "  "
+        end
+        puts ""
+      end
+      display_totals(hands)
+      display_bets(hands)
     end
-    display_totals(hands)
   end
 
   def display_totals(hands)
@@ -192,7 +145,7 @@ module GraphicControls
   def display_bets(hands)
     hands.each do |hand|
       text = "Bet $#{hand.bet}"
-      print text
+      print hand.bet > 0 ? text : " " * text.length
       if hands.size > 1
         buff = (hand.cards.size * 9) + 2 - text.length
         (1..buff).each { print " " }
@@ -222,7 +175,7 @@ module GraphicControls
     end
   end
 
-  def display_scores(hands)
+  def display_result(hands)
     hands.each do |hand|
       text = hand.result.to_s.sub(/_/, ' ')
       print text
@@ -233,6 +186,31 @@ module GraphicControls
     end
     puts ""
   end
+
+  # def below_hand_display(text)
+  #   hands.each do |hand|
+  #     text = hand.result.to_s.sub(/_/, ' ')
+  #     print text
+  #     if hands.size > 1
+  #       buff = (hand.cards.size * 9) + 2 - text.length
+  #       (1..buff).each { print " " }
+  #     end
+  #   end
+  #   puts ""
+  # end
+
+  def display_scores(hands, multipliers, name=nil)
+    puts name if name
+    if hands.size > 3
+      display_scores(hands[0, 2], multipliers)
+      puts ""
+      display_scores(hands[2, 2], multipliers)
+    else
+      display_hands(hands)
+      display_result(hands)
+      display_winnings(hands, multipliers)
+    end
+  end
 end
 
 module Scoring
@@ -242,9 +220,7 @@ module Scoring
                   lose: -1, tie: 1 }
 
   def natural_blackjack?(hands)
-    hands[0].value == 21 &&
-      hands[0].cards.size == 2 &&
-      hands.size == 1
+    hands[0].value == 21 && hands[0].cards.size == 2 && hands.size == 1
   end
 
   def win?(hand1, hand2)
@@ -279,7 +255,7 @@ class Actor
   attr_reader :hands, :name
 
   def initialize
-    @hands = []
+    reset
   end
 
   def new_hand(shoe, bet)
@@ -307,6 +283,10 @@ class Actor
   def natural?
     natural_blackjack?(@hands)
   end
+
+  def reset
+    @hands = []
+  end
 end
 
 class Player < Actor
@@ -315,7 +295,7 @@ class Player < Actor
   attr_accessor :bankroll
 
   def initialize(bankroll, min_bet)
-    reset
+    super()
     @bankroll = bankroll
     @min_bet = min_bet
     @name = "Player"
@@ -327,7 +307,7 @@ class Player < Actor
 
   def split?(hand)
     display_hands([hand])
-    split_hand?
+    split_response
   end
 
   def split(hand)
@@ -336,17 +316,24 @@ class Player < Actor
     @hands.insert(hand_index + 1, new_hand)
     hand.hit
     new_hand.hit
+    update_bankroll(-new_hand.bet)
     new_hand
   end
 
-  def reset
-    @hands = []
+  def split_response
+    pos_responses = ['yes', 'y', 'split', 's']
+    yes_or_no?("Split hand? (y)es | (n)o", pos_responses)
   end
 
   def hit?(hand)
     return unless super
     display_hands([hand]) if @hands.size > 1
     hit_response
+  end
+
+  def hit_response
+    pos_responses = ['hit', 'h', 'yes', 'y']
+    yes_or_no?("Would you like to (h)it or (s)tay?", pos_responses)
   end
 
   def place_bet
@@ -357,6 +344,19 @@ class Player < Actor
 
   def update_bankroll(diff)
     @bankroll += diff
+    @bankroll = @bankroll.to_i unless @bankroll > @bankroll.to_i
+  end
+
+  def bet_amount(bankroll, min_bet)
+    bet = min_bet
+    loop do
+      print "Enter your bet as a whole number: "
+      bet = gets.chomp.to_i
+      break if bet >= min_bet && bet <= bankroll
+      puts ""
+      puts "You must enter a number between #{min_bet} and #{bankroll}."
+    end
+    bet
   end
 end
 
@@ -390,13 +390,7 @@ class Card
   attr_accessor :is_soft
 
   def initialize(rank, suit, abbrv, vals)
-    if rank == :ace
-      @is_soft = true
-      @soft_value = vals[1]
-    else
-      @is_soft = false
-      @soft_value = vals[0]
-    end
+    starting_soft_value(rank, vals)
     @hard_value = vals[0]
     @suit = suit
     @rank = rank
@@ -410,6 +404,16 @@ class Card
   def harden
     @is_soft = false
   end
+
+  def starting_soft_value(rank, vals)
+    if rank == :ace
+      @is_soft = true
+      @soft_value = vals[1]
+    else
+      @is_soft = false
+      @soft_value = vals[0]
+    end
+  end
 end
 
 class Deck
@@ -417,6 +421,7 @@ class Deck
             spades: "\u2660", clubs: "\u2663" }
   FACE_CARDS = { ace: [1, 11], king: [10],
                  queen: [10], jack: [10] }
+  FACE_CARDS = { king: [10], queen: [10], jack: [10] }
 
   def initialize
     @cards = []
@@ -444,6 +449,8 @@ class Shoe
   attr_reader :num_decks, :discard_pile
 
   def initialize(min_decks, max_decks)
+    print_intro
+    puts ""
     @num_decks = how_many_decks?(min_decks, max_decks)
     reset
     @shuffle_next = false
@@ -456,6 +463,17 @@ class Shoe
   def reshuffle
     shuffle
     shuffling_msg
+  end
+
+  def shuffling_msg
+    (1..4).each do |i|
+      clear_screen
+      print_intro
+      puts ""
+      print "Reshuffling deck"
+      (1..i).each { print "." }
+      sleep 1
+    end
   end
 
   def place_cut_card
@@ -481,6 +499,18 @@ class Shoe
     shuffle_next? ? reshuffle : shuffle
     place_cut_card
     @shuffle_next = false
+  end
+
+  def how_many_decks?(min_decks, max_decks)
+    loop do
+      print "How many decks? (#{min_decks}-#{max_decks}): "
+      num_decks = gets.chomp.to_i
+      return num_decks if (min_decks..max_decks).include?(num_decks)
+      print_intro
+      puts ""
+      puts "Please enter an whole number between " \
+            "#{min_decks} and #{max_decks}."
+    end
   end
 end
 
@@ -578,6 +608,15 @@ class Round
     @shoe.reset if @shoe.shuffle_next?
   end
 
+  def play
+    deal
+    player_turn
+    dealer_turn
+    update_score
+    show_results
+    close_out
+  end
+
   def show_results
     print_score_screen(@player.bankroll, self)
   end
@@ -588,13 +627,19 @@ class Round
     @dealer.new_hand(@shoe)
     refresh_hands
     print_screen_with_delay(@player.bankroll, self)
-    @dealer.hit(hide: true)
+    dealer_hit(hide: true)
+    player_hit(player_hand)
+    dealer_hit
+    player_hit(player_hand)
+  end
+
+  def player_hit(hand)
+    @player.hit(hand)
     print_screen_with_delay(@player.bankroll, self)
-    @player.hit(player_hand)
-    print_screen_with_delay(@player.bankroll, self)
-    @dealer.hit
-    print_screen_with_delay(@player.bankroll, self)
-    @player.hit(player_hand)
+  end
+
+  def dealer_hit(hide: false)
+    @dealer.hit(hide: hide)
     print_screen_with_delay(@player.bankroll, self)
   end
 
@@ -603,7 +648,7 @@ class Round
       flip_hidden_card
       print_screen_with_delay(@player.bankroll, self)
       if @dealer.natural?
-        tied_with_dealer
+        tied_with_dealer_message
       end
     else
       player_split_turn
@@ -650,11 +695,7 @@ class Round
   def update_bankroll
     @player.hands.each do |hand|
       win_amount = hand.bet * @multipliers[hand.result]
-      update_amount = if win_amount < 0
-                        0
-                      else
-                        win_amount
-                      end
+      update_amount = win_amount < 0 ? 0 : win_amount
       @player.update_bankroll(update_amount)
     end
     @player.bankroll
@@ -684,6 +725,10 @@ class Round
     end
   end
 
+  def tied_with_dealer_message
+    prompt("Sorry, you tied with the dealer, but you get to keep your bet.")
+  end
+
   # create copies of player and dealer hands within Round so they remain linked
   # to their Round once new Round starts.
   # clear out existing hands for dealer and player so they start
@@ -708,15 +753,10 @@ class TOGame
       new_game
       loop do
         new_round
-        @current_round.deal
-        @current_round.player_turn
-        @current_round.dealer_turn
-        @current_round.update_score
-        @current_round.show_results
-        @current_round.close_out
-        break unless new_round?
+        @current_round.play
+        break unless new_round_response
       end
-      break unless new_game?
+      break unless new_game_response
     end
   end
 
@@ -732,6 +772,18 @@ class TOGame
     @round_num = 0
     @rounds = []
     @shoe = Shoe.new(MIN_NUM_DECKS, MAX_NUM_DECKS)
+  end
+
+  def new_game_response
+    pos_responses = ['yes', 'y']
+    yes_or_no?("Would you like to start a new game? (y)es | (n)o",
+               pos_responses)
+  end
+
+  def new_round_response
+    pos_responses = ['yes', 'y']
+    yes_or_no?("Would you like to play another round? (y)es | (n)o",
+               pos_responses)
   end
 end
 
